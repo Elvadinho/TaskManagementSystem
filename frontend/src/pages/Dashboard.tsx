@@ -1,12 +1,14 @@
-import { useAuth } from "../context/AuthContext";
-
-export default function Dashboard() {
-  const { user, logout } = useAuth();
-
+const Dashboard = () => {
+  const logout = () => {
+    localStorage.removeItem("token");
+    window.location.reload();
+  };
   return (
     <div>
-      <h2>Welcome, {user?.name ?? user?.email}</h2>
+      <h2>You are logged in!</h2>
       <button onClick={logout}>Log out</button>
     </div>
   );
-}
+};
+
+export default Dashboard;

@@ -1,68 +1,55 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { type LoginPayload } from "../types/auth";
-import axios from "axios";
+import { useState } from "react";
 
-export default function Login() {
-  const [formData, setFormData] = useState<LoginPayload>({
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
+export default function Login({ goToSignup }: { goToSignup: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const handleLogin = async () => {
     try {
-      await login(formData);
-      navigate("/dashboard");
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Invalid credentials.");
-      } else {
-        setError("Something went wrong.");
+      const res = await fetch("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Login failed.");
+        return;
       }
-    } finally {
-      setLoading(false);
+
+      localStorage.setItem("token", data.token);
+      window.location.reload(); // re-render App, token now exists
+    } catch (err) {
+      setError(`Could not connect to server  ${err}`);
     }
   };
 
   return (
     <div>
-      <h2>Log In</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Log In"}
-        </button>
-      </form>
+      <h2>Login</h2>
+      <input
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <br />
+      <input
+        placeholder="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <br />
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <button onClick={handleLogin}>Log in</button>
       <p>
-        Don't have an account? <Link to="/signup">Sign up</Link>
+        No account?{" "}
+        <span style={{ cursor: "pointer", color: "blue" }} onClick={goToSignup}>
+          Sign up
+        </span>
       </p>
     </div>
   );

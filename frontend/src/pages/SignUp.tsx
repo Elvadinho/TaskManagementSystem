@@ -1,76 +1,61 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { type SignUpPayload } from "../types/auth";
-import axios from "axios";
+import { useState } from "react";
 
-export default function Signup() {
-  const [formData, setFormData] = useState<SignUpPayload>({
-    name: "",
-    email: "",
-    password: "",
-  });
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const { signup } = useAuth();
-  const navigate = useNavigate();
+export default function Signup({ goToLogin }: { goToLogin: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const handleSignup = async () => {
     try {
-      await signup(formData);
-      navigate("/dashboard");
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Signup failed. Try again.");
-      } else {
-        setError("Something went wrong.");
+      const res = await fetch("http://localhost:3000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Signup failed.");
+        return;
       }
-    } finally {
-      setLoading(false);
+      localStorage.setItem("token", data.token);
+      window.location.reload();
+    } catch (err) {
+      setError(`Could not connect to server ${err}`);
     }
   };
 
   return (
     <div>
       <h2>Sign Up</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          name="name"
-          placeholder="Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" disabled={loading}>
-          {loading ? "Creating account..." : "Sign Up"}
-        </button>
-      </form>
+      <input
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <br />
+      <input
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <br />
+      <input
+        placeholder="Password"
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <br />
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      <button onClick={handleSignup}>Sign Up</button>
       <p>
-        Already have an account? <Link to="/login">Log in</Link>
+        Already have an account?{" "}
+        <span style={{ cursor: "pointer", color: "blue" }} onClick={goToLogin}>
+          Log in
+        </span>
       </p>
     </div>
   );
